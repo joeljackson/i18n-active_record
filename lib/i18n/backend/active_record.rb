@@ -30,20 +30,24 @@ module I18n
       protected
 
         def lookup(locale, key, scope = [], options = {})
-          key = normalize_flat_keys(locale, key, scope, options[:separator])
-          result = Translation.locale(locale).lookup(key).all
-
-          if result.empty?
-            nil
-          elsif result.first.key == key
-            result.first.value
-          else
-            chop_range = (key.size + FLATTEN_SEPARATOR.size)..-1
-            result = result.inject({}) do |hash, r|
-              hash[r.key.slice(chop_range)] = r.value
-              hash
+          begin
+            key = normalize_flat_keys(locale, key, scope, options[:separator])
+            result = Translation.locale(locale).lookup(key).all
+            
+            if result.empty?
+              nil
+            elsif result.first.key == key
+              result.first.value
+            else
+              chop_range = (key.size + FLATTEN_SEPARATOR.size)..-1
+              result = result.inject({}) do |hash, r|
+                hash[r.key.slice(chop_range)] = r.value
+                hash
+              end
+              result.deep_symbolize_keys
             end
-            result.deep_symbolize_keys
+          rescue Object::ActiveRecord::StatementInvalid => e
+            ""
           end
         end
 
